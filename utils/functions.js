@@ -26,11 +26,12 @@ function toPersianDigits(n) {
 
 async function setAccessToken(res, user) {
   const cookieOptions = {
-    maxAge: 1000 * 60 * 60 * 24 * 1, // would expire after 1 day
+    maxAge: 1000 * 60 * 60 * 24 * 1, // would expire after 1 days
     httpOnly: true, // The cookie only accessible by the web server
     signed: true, // Indicates if the cookie should be signed
     sameSite: "None", // Updated to 'None'
     secure: process.env.NODE_ENV === "production", // Set secure to true in production
+
   };
   res.cookie(
     "accessToken",
@@ -69,17 +70,16 @@ function generateToken(user, expiresIn, secret) {
       secret || process.env.TOKEN_SECRET_KEY,
       options,
       (err, token) => {
-        if (err) reject(createError.InternalServerError("Server error"));
+        if (err) reject(createError.InternalServerError("خطای سروری"));
         resolve(token);
       }
     );
   });
 }
-
 function verifyRefreshToken(req) {
   const refreshToken = req.signedCookies["refreshToken"];
   if (!refreshToken) {
-    throw createError.Unauthorized("Please log in to your account.");
+    throw createError.Unauthorized("لطفا وارد حساب کاربری خود شوید.");
   }
   const token = cookieParser.signedCookie(
     refreshToken,
@@ -92,17 +92,17 @@ function verifyRefreshToken(req) {
       async (err, payload) => {
         try {
           if (err)
-            reject(createError.Unauthorized("Please log in to your account"));
+            reject(createError.Unauthorized("لطفا حساب کاربری خود شوید"));
           const { _id } = payload;
           const user = await UserModel.findById(_id, {
             password: 0,
             otp: 0,
             resetLink: 0,
           });
-          if (!user) reject(createError.Unauthorized("Account not found"));
+          if (!user) reject(createError.Unauthorized("حساب کاربری یافت نشد"));
           return resolve(_id);
         } catch (error) {
-          reject(createError.Unauthorized("Account not found"));
+          reject(createError.Unauthorized("حساب کاربری یافت نشد"));
         }
       }
     );
@@ -346,45 +346,103 @@ async function getUserCartDetail(userId) {
           //     },
           //   },
           // },
-          totalDiscount: {
-            $sum: {
-              $map: {
-                input: "$discountDetail.newProductDetail",
-                as: "product",
-                in: {
-                  $subtract: [
-                    {
-                      $convert: {
-                        input: { $ifNull: ["$$product.price", "0"] },
-                        to: "double",
-                        onError: 0,
-                      },
-                    },
-                    {
-                      $convert: {
-                        input: { $ifNull: ["$$product.offPrice", "0"] },
-                        to: "double",
-                        onError: 0,
-                      },
-                    },
-                  ],
+          orderItems: {
+            $map: {
+              input: "$discountDetail.newProductDetail",
+              as: "product",
+              in: {
+                price: {
+                  $cond: {
+                    if: { $ne: ["$$product.offPrice", 0] }, // Check if offPrice is not zero
+                    then: "$$product.offPrice", // If not zero, use offPrice
+                    else: "$$product.price", // If zero, use regular price
+                  },
                 },
+                product: "$$product._id",
               },
             },
+          },
+          productIds: {
+            $map: {
+              input: "$discountDetail.newProductDetail",
+              as: "product",
+              in: "$$product._id",
+            },
+          },
+          description: {
+            $concat: [
+              {
+                $reduce: {
+                  input: "$discountDetail.newProductDetail",
+                  initialValue: "",
+                  in: {
+                    $concat: [
+                      "$$value",
+                      { $cond: [{ $eq: ["$$value", ""] }, "", " - "] },
+                      "$$this.title",
+                    ],
+                  },
+                },
+              },
+              " | ",
+              "$name",
+            ],
           },
         },
       },
     },
+    {
+      $project: {
+        cart: 0,
+        name: 0,
+        discountDetail: 0,
+      },
+    },
   ]);
-  return cartDetail;
+  return copyObject(cartDetail);
 }
+
+function copyObject(object) {
+  return JSON.parse(JSON.stringify(object));
+}
+function deleteInvalidPropertyInObject(data = {}, blackListFields = []) {
+  // let nullishData = ["", " ", "0", 0, null, undefined];
+  let nullishData = ["", " ", null, undefined];
+  Object.keys(data).forEach((key) => {
+    if (blackListFields.includes(key)) delete data[key];
+    if (typeof data[key] == "string") data[key] = data[key].trim();
+    if (Array.isArray(data[key]) && data[key].length > 0)
+      data[key] = data[key].map((item) => item.trim());
+    if (Array.isArray(data[key]) && data[key].length == 0) delete data[key];
+    if (nullishData.includes(data[key])) delete data[key];
+  });
+}
+async function checkProductExist(id) {
+  const { ProductModel } = require("../app/models/product");
+  if (!mongoose.isValidObjectId(id))
+    throw createError.BadRequest("شناسه محصول ارسال شده صحیح نمیباشد");
+  const product = await ProductModel.findById(id);
+  if (!product) throw createError.NotFound("محصولی یافت نشد");
+  return product;
+}
+
+function invoiceNumberGenerator() {
+  return (
+    moment().format("jYYYYjMMjDDHHmmssSSS") +
+    String(process.hrtime()[1]).padStart(9, 0)
+  );
+}
+
 module.exports = {
-  secretKeyGenerator,
   generateRandomNumber,
+  toPersianDigits,
   setAccessToken,
   setRefreshToken,
-  generateToken,
   verifyRefreshToken,
   getUserCartDetail,
-  toPersianDigits,
+  copyObject,
+  deleteInvalidPropertyInObject,
+  checkProductExist,
+  invoiceNumberGenerator,
+  secretKeyGenerator,
 };

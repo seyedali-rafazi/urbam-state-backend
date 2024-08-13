@@ -23,6 +23,7 @@ class ProductController extends Controller {
     const {
       title,
       description,
+      slug,
       imageLink,
       houseGroup,
       price,
@@ -45,6 +46,7 @@ class ProductController extends Controller {
     const product = await ProductModel.create({
       title,
       description,
+      slug,
       imageLink,
       houseGroup,
       price,
@@ -64,11 +66,11 @@ class ProductController extends Controller {
       city,
     });
     if (!product?._id)
-      throw createHttpError.InternalServerError("Product was not registered");
+      throw createHttpError.InternalServerError("محصول ثبت نشد");
     return res.status(HttpStatus.CREATED).json({
       statusCode: HttpStatus.CREATED,
       data: {
-        message: "Product created successfully",
+        message: "محصول با موفقیت ایجاد شد",
         product,
       },
     });
@@ -217,6 +219,30 @@ class ProductController extends Controller {
     });
   }
 
+  async getOneProductBySlug(req, res) {
+    const { slug } = req.params;
+    const product = await ProductModel.findOne({ slug }).populate([
+      {
+        path: "houseGroup",
+        model: "houseGroup",
+        select: {
+          title: 1,
+          icon: 1,
+        },
+      },
+    ]);
+
+    if (!product)
+      throw createHttpError.NotFound("دوره ای با این مشخصات یافت نشد");
+
+    return res.status(HttpStatus.OK).json({
+      statusCode: HttpStatus.OK,
+      data: {
+        product,
+      },
+    });
+  }
+
   async changeProductDiscountStatus(req, res) {
     const { id } = req.params;
     await this.findProductById(id);
@@ -230,22 +256,22 @@ class ProductController extends Controller {
       return res.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         data: {
-          message: "Product discount status activated",
+          message: "وضعیت تخفیف محصول فعال شد",
         },
       });
     }
-    throw createHttpError.BadRequest("Change failed, please try again");
+    throw createHttpError.BadRequest("تغییر انجام نشد مجددا تلاش کنید");
   }
   async removeProduct(req, res) {
     const { id } = req.params;
     await this.findProductById(id);
     const deleteResult = await ProductModel.deleteOne({ _id: id });
     if (deleteResult.deletedCount == 0)
-      throw createError.InternalServerError("Product deletion failed");
+      throw createError.InternalServerError("حدف محصول انجام نشد");
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: "Product deleted successfully",
+        message: "حذف محصول با موفقیت انجام شد",
       },
     });
   }
@@ -262,12 +288,14 @@ class ProductController extends Controller {
       }
     );
     if (!updateProductResult.modifiedCount)
-      throw new createHttpError.InternalServerError("Product update failed");
+      throw new createHttpError.InternalServerError(
+        "به روزرسانی محصول انجام نشد"
+      );
 
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: "Product updated successfully",
+        message: "به روزرسانی محصول با موفقیت انجام شد",
       },
     });
   }
@@ -297,12 +325,12 @@ class ProductController extends Controller {
     );
 
     if (productUpdate.modifiedCount === 0 || userUpdate.modifiedCount === 0)
-      throw createHttpError.BadRequest("Operation was unsuccessful.");
+      throw createHttpError.BadRequest("عملیات ناموفق بود.");
 
     let message;
     if (!likedProduct) {
-      message = "Thanks for your like";
-    } else message = "Your like has been removed";
+      message = "مرسی بابت لایک تون";
+    } else message = "لایک شما برداشته شد";
 
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
@@ -314,9 +342,9 @@ class ProductController extends Controller {
 
   async findProductById(id) {
     if (!mongoose.isValidObjectId(id))
-      throw createHttpError.BadRequest("The provided product ID is invalid");
+      throw createHttpError.BadRequest("شناسه محصول ارسال شده صحیح نمیباشد");
     const product = await ProductModel.findById(id);
-    if (!product) throw createHttpError.NotFound("Product not found.");
+    if (!product) throw createHttpError.NotFound("محصولی یافت نشد.");
     return product;
   }
 }

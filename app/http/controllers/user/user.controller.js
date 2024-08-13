@@ -13,7 +13,7 @@ const {
 const createError = require("http-errors");
 const { UserModel } = require("../../../models/user");
 const Kavenegar = require("kavenegar");
-const CODE_EXPIRES = 90 * 1000; //90 seconds in milliseconds
+const CODE_EXPIRES = 90 * 1000; // 90 seconds in milliseconds
 const { StatusCodes: HttpStatus } = require("http-status-codes");
 const path = require("path");
 const { ROLES } = require("../../../../utils/constants");
@@ -36,7 +36,9 @@ class userAuthController extends Controller {
     let { phoneNumber, password } = req.body;
 
     if (!phoneNumber || !password)
-      throw createError.BadRequest("Enter a valid phone number and password");
+      throw createError.BadRequest(
+        "Please enter a valid phone number and password"
+      );
 
     phoneNumber = phoneNumber.trim();
     this.phoneNumber = phoneNumber;
@@ -54,12 +56,12 @@ class userAuthController extends Controller {
       const user = await this.saveUser(phoneNumber, hashedPassword);
       await setAccessToken(res, user);
       await setRefreshToken(res, user);
-      let WELCOME_MESSAGE = `Registration successful. Welcome to Saghfino`;
+      let WELLCOME_MESSAGE = `Registration was successful. Welcome to Urban State`;
 
       return res.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         data: {
-          message: WELCOME_MESSAGE,
+          message: WELLCOME_MESSAGE,
           user,
         },
       });
@@ -68,13 +70,14 @@ class userAuthController extends Controller {
     if (!isPasswordValid) throw createError.Unauthorized("Incorrect password");
     await setAccessToken(res, user);
     await setRefreshToken(res, user);
-    let WELCOME_MESSAGE = `Welcome to Saghfino`;
-    if (!user.isActive) WELCOME_MESSAGE = `Please complete your profile`;
+    let WELLCOME_MESSAGE = `Welcome to Saqfinu`;
+    if (!user.isActive)
+      WELLCOME_MESSAGE = `Please complete your profile information`;
 
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: WELCOME_MESSAGE,
+        message: WELLCOME_MESSAGE,
         user,
       },
     });
@@ -147,11 +150,11 @@ class userAuthController extends Controller {
       }
     );
     if (!updateResult.modifiedCount === 0)
-      throw createError.BadRequest("Information was not edited");
+      throw createError.BadRequest("Information was not updated");
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: "Information updated successfully",
+        message: "Information was successfully updated",
       },
     });
   }

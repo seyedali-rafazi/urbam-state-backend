@@ -6,10 +6,12 @@ const addProductSchema = Joi.object({
   title: Joi.string()
     .required()
     .min(3)
+    .max(30)
     .error(createError.BadRequest("Incorrect title")),
   description: Joi.string()
     .required()
     .error(createError.BadRequest("Incorrect description")),
+  slug: Joi.string().required().error(createError.BadRequest("Incorrect slug")),
   imageLink: Joi.string()
     .required()
     .error(createError.BadRequest("Incorrect imageLink")),
