@@ -18,7 +18,7 @@ class CartController extends Controller {
     const existProduct = await this.findProductInCart(userId, productId);
 
     if (existProduct) {
-      throw createHttpError.InternalServerError("It exist in your Card");
+      throw createHttpError.InternalServerError("It exists in your Cart");
     }
     if (product) {
       const addToCartResult = await UserModel.updateOne(
@@ -34,7 +34,7 @@ class CartController extends Controller {
       );
       if (addToCartResult.modifiedCount == 0)
         throw createHttpError.InternalServerError(
-          "Product was not added to card"
+          "Product was not added to cart"
         );
     } else {
       const addToCartResult = await UserModel.updateOne(
@@ -52,14 +52,14 @@ class CartController extends Controller {
       );
       if (addToCartResult.modifiedCount == 0)
         throw createHttpError.InternalServerError(
-          "Product was not added to card"
+          "Product was not added to cart"
         );
     }
 
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: `Added to card ${addedProduct.title}`,
+        message: `Added to cart: ${addedProduct.title}`,
       },
     });
   }
@@ -71,7 +71,7 @@ class CartController extends Controller {
     const product = await this.findProductInCart(userId, productId);
     if (!product)
       throw createHttpError.BadRequest(
-        `${removedProduct.title} در سبد خرید شما وجود ندارد`
+        `${removedProduct.title} is not in your cart`
       );
     let message;
     if (product.quantity > 1) {
@@ -87,9 +87,11 @@ class CartController extends Controller {
         }
       );
       if (decreaseCart.modifiedCount == 0)
-        throw createHttpError.InternalServerError("محصول از سبد خرید کم نشد");
+        throw createHttpError.InternalServerError(
+          "Product was not reduced from cart"
+        );
 
-      message = "یک عدد از محصول داخل سبد خرید کم شد";
+      message = "One quantity of the product was removed from the cart";
     } else {
       const newCart = await UserModel.findOneAndUpdate(
         {
@@ -105,10 +107,10 @@ class CartController extends Controller {
       );
       if (newCart.modifiedCount == 0)
         throw createHttpError.InternalServerError(
-          "محصول به سبد خرید اضافه نشد"
+          "Product was not removed from cart"
         );
 
-      message = "محصول از سبد خرید حذف شد";
+      message = "Product was removed from the cart";
 
       if (newCart.cart.products.length === 0)
         await UserModel.updateOne(
@@ -134,7 +136,7 @@ class CartController extends Controller {
 
     if (!product) {
       throw createHttpError.BadRequest(
-        `${removedProduct.title} در سبد خرید شما وجود ندارد`
+        `${removedProduct.title} is not in your cart`
       );
     }
 
@@ -145,10 +147,12 @@ class CartController extends Controller {
     );
 
     if (newCart.modifiedCount == 0) {
-      throw createHttpError.InternalServerError("محصول از سبد خرید حذف نشد");
+      throw createHttpError.InternalServerError(
+        "Product was not removed from cart"
+      );
     }
 
-    const message = "محصول از سبد خرید حذف شد";
+    const message = "Product was removed from the cart";
 
     if (newCart.cart.products.length === 0) {
       await UserModel.updateOne(
@@ -169,16 +173,20 @@ class CartController extends Controller {
     const user = req.user;
     const coupon = await CouponModel.findOne({ code: couponCode });
     if (!coupon)
-      throw createHttpError.BadRequest("کد تخفیف وارد شده وجود ندارد");
+      throw createHttpError.BadRequest(
+        "The entered coupon code does not exist"
+      );
     if (coupon.usageCount >= coupon.usageLimit)
-      throw createHttpError.BadRequest("ظرفیت کد تخفیف به اتمام رسیده است");
+      throw createHttpError.BadRequest(
+        "Coupon code usage limit has been reached"
+      );
     if (
       coupon?.expireDate &&
       new Date(coupon.expireDate).getTime() < Date.now()
     )
-      throw createHttpError.BadRequest("کد تخفیف منقضی شده است");
+      throw createHttpError.BadRequest("Coupon code has expired");
     if (!coupon.isActive)
-      throw createHttpError.BadRequest("کد تخفیف فعال نیست");
+      throw createHttpError.BadRequest("Coupon code is not active");
     const productIdsInCart = user.cart.products.map((p) =>
       p.productId.valueOf()
     );
@@ -187,7 +195,7 @@ class CartController extends Controller {
     );
     if (!isCouponIncludeCartItems)
       throw createHttpError.BadRequest(
-        "کد تخفیف مختص هیچ کدام از این محصولات نمی باشد."
+        "Coupon code does not apply to any of the products in your cart"
       );
     const addCouponToCart = await UserModel.updateOne(
       { _id: user._id },
@@ -196,13 +204,15 @@ class CartController extends Controller {
       }
     );
     if (addCouponToCart.modifiedCount == 0)
-      throw new createHttpError.InternalServerError("کد تخفیف اعمال نشد");
+      throw new createHttpError.InternalServerError(
+        "Coupon code was not applied"
+      );
 
     const userCartDetail = (await getUserCartDetail(user._id))?.[0];
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: "کد تخفیف با موفقیت اعمال شد",
+        message: "Coupon code was successfully applied",
         cart: userCartDetail,
       },
     });
@@ -217,12 +227,12 @@ class CartController extends Controller {
       }
     );
     if (removeCouponFromCart.modifiedCount == 0)
-      throw createHttpError.InternalServerError("کد تخفیف حذف نشد");
+      throw createHttpError.InternalServerError("Coupon code was not removed");
     const userCartDetail = (await getUserCartDetail(userId))?.[0];
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: "کد تخفیف برداشته شد",
+        message: "Coupon code was removed",
         cart: userCartDetail,
       },
     });
@@ -230,7 +240,9 @@ class CartController extends Controller {
   async checkExistProduct(id) {
     const product = await ProductModel.findById(id);
     if (!product)
-      throw createHttpError.NotFound(" محصولی با این مشخصات یافت نشد");
+      throw createHttpError.NotFound(
+        "Product with these specifications was not found"
+      );
     return product;
   }
   async findProductInCart(userId, productId) {

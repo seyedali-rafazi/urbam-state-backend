@@ -1,28 +1,28 @@
 const Joi = require("joi");
 const createHttpError = require("http-errors");
-const { MongoIDPattern } = require("../../../../utils/constants");
 
 const addCouponSchema = Joi.object({
   code: Joi.string()
     .required()
     .min(5)
     .max(30)
-    .error(createHttpError.BadRequest("کد تخفیف صحیح نمیباشد")),
+    .error(createHttpError.BadRequest("Invalid discount code")),
   type: Joi.string()
     .required()
     .valid("fixedProduct", "percent")
-    .error(createHttpError.BadRequest("نوع کد تخفیف را به درستی وارد کنید")),
+    .error(createHttpError.BadRequest("Please enter a valid discount type")),
   amount: Joi.number()
     .required()
-    .error(createHttpError.BadRequest("مقدار کد تخفیف را به درستی وارد کنید")),
+    .error(createHttpError.BadRequest("Please enter a valid discount amount")),
   expireDate: Joi.date()
     .allow()
-    .error(createHttpError.BadRequest("مقدار کد تخفیف را به درستی وارد کنید")),
+    .error(createHttpError.BadRequest("Please enter a valid expiration date")),
   usageLimit: Joi.number()
     .required()
-    .error(createHttpError.BadRequest("ظرفیت کد تخفیف را به درستی وارد کنید")),
-  productIds: Joi.array()
-    .error(createHttpError.BadRequest("شناسه محصول صحیح نمی باشد")),
+    .error(createHttpError.BadRequest("Please enter a valid usage limit")),
+  productIds: Joi.array().error(
+    createHttpError.BadRequest("Invalid product ID")
+  ),
 });
 
 module.exports = {

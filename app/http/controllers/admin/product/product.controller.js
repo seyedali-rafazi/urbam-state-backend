@@ -64,11 +64,11 @@ class ProductController extends Controller {
       city,
     });
     if (!product?._id)
-      throw createHttpError.InternalServerError("محصول ثبت نشد");
+      throw createHttpError.InternalServerError("Product was not registered");
     return res.status(HttpStatus.CREATED).json({
       statusCode: HttpStatus.CREATED,
       data: {
-        message: "محصول با موفقیت ایجاد شد",
+        message: "Product created successfully",
         product,
       },
     });
@@ -217,8 +217,6 @@ class ProductController extends Controller {
     });
   }
 
-
-
   async changeProductDiscountStatus(req, res) {
     const { id } = req.params;
     await this.findProductById(id);
@@ -232,22 +230,22 @@ class ProductController extends Controller {
       return res.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         data: {
-          message: "وضعیت تخفیف محصول فعال شد",
+          message: "Product discount status activated",
         },
       });
     }
-    throw createHttpError.BadRequest("تغییر انجام نشد مجددا تلاش کنید");
+    throw createHttpError.BadRequest("Change failed, please try again");
   }
   async removeProduct(req, res) {
     const { id } = req.params;
     await this.findProductById(id);
     const deleteResult = await ProductModel.deleteOne({ _id: id });
     if (deleteResult.deletedCount == 0)
-      throw createError.InternalServerError("حدف محصول انجام نشد");
+      throw createError.InternalServerError("Product deletion failed");
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: "حذف محصول با موفقیت انجام شد",
+        message: "Product deleted successfully",
       },
     });
   }
@@ -264,14 +262,12 @@ class ProductController extends Controller {
       }
     );
     if (!updateProductResult.modifiedCount)
-      throw new createHttpError.InternalServerError(
-        "به روزرسانی محصول انجام نشد"
-      );
+      throw new createHttpError.InternalServerError("Product update failed");
 
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: "به روزرسانی محصول با موفقیت انجام شد",
+        message: "Product updated successfully",
       },
     });
   }
@@ -301,12 +297,12 @@ class ProductController extends Controller {
     );
 
     if (productUpdate.modifiedCount === 0 || userUpdate.modifiedCount === 0)
-      throw createHttpError.BadRequest("عملیات ناموفق بود.");
+      throw createHttpError.BadRequest("Operation was unsuccessful.");
 
     let message;
     if (!likedProduct) {
-      message = "مرسی بابت لایک تون";
-    } else message = "لایک شما برداشته شد";
+      message = "Thanks for your like";
+    } else message = "Your like has been removed";
 
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
@@ -318,9 +314,9 @@ class ProductController extends Controller {
 
   async findProductById(id) {
     if (!mongoose.isValidObjectId(id))
-      throw createHttpError.BadRequest("شناسه محصول ارسال شده صحیح نمیباشد");
+      throw createHttpError.BadRequest("The provided product ID is invalid");
     const product = await ProductModel.findById(id);
-    if (!product) throw createHttpError.NotFound("محصولی یافت نشد.");
+    if (!product) throw createHttpError.NotFound("Product not found.");
     return product;
   }
 }

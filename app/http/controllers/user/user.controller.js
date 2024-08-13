@@ -13,7 +13,7 @@ const {
 const createError = require("http-errors");
 const { UserModel } = require("../../../models/user");
 const Kavenegar = require("kavenegar");
-const CODE_EXPIRES = 90 * 1000; //90 seconds in miliseconds
+const CODE_EXPIRES = 90 * 1000; //90 seconds in milliseconds
 const { StatusCodes: HttpStatus } = require("http-status-codes");
 const path = require("path");
 const { ROLES } = require("../../../../utils/constants");
@@ -36,9 +36,7 @@ class userAuthController extends Controller {
     let { phoneNumber, password } = req.body;
 
     if (!phoneNumber || !password)
-      throw createError.BadRequest(
-        "شماره موبایل و رمز عبور معتبر را وارد کنید"
-      );
+      throw createError.BadRequest("Enter a valid phone number and password");
 
     phoneNumber = phoneNumber.trim();
     this.phoneNumber = phoneNumber;
@@ -56,12 +54,12 @@ class userAuthController extends Controller {
       const user = await this.saveUser(phoneNumber, hashedPassword);
       await setAccessToken(res, user);
       await setRefreshToken(res, user);
-      let WELLCOME_MESSAGE = `ثبت نام موفقیت آمیز بود به سقفینو خوش آمدید`;
+      let WELCOME_MESSAGE = `Registration successful. Welcome to Saghfino`;
 
       return res.status(HttpStatus.OK).json({
         statusCode: HttpStatus.OK,
         data: {
-          message: WELLCOME_MESSAGE,
+          message: WELCOME_MESSAGE,
           user,
         },
       });
@@ -70,13 +68,13 @@ class userAuthController extends Controller {
     if (!isPasswordValid) throw createError.Unauthorized("Incorrect password");
     await setAccessToken(res, user);
     await setRefreshToken(res, user);
-    let WELLCOME_MESSAGE = `به سقفینوو خوش آمدید`;
-    if (!user.isActive) WELLCOME_MESSAGE = `لطفا مشخصات خود را تکمیل کنید`;
+    let WELCOME_MESSAGE = `Welcome to Saghfino`;
+    if (!user.isActive) WELCOME_MESSAGE = `Please complete your profile`;
 
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: WELLCOME_MESSAGE,
+        message: WELCOME_MESSAGE,
         user,
       },
     });
@@ -116,7 +114,7 @@ class userAuthController extends Controller {
 
     if (duplicateUser)
       throw createError.BadRequest(
-        "کاربری با این ایمیل قبلا ثبت نام کرده است."
+        "A user with this email has already registered."
       );
 
     const updatedUser = await UserModel.findOneAndUpdate(
@@ -131,7 +129,7 @@ class userAuthController extends Controller {
     return res.status(HttpStatus.OK).send({
       statusCode: HttpStatus.OK,
       data: {
-        message: "اطلاعات شما با موفقیت به روز رسانی شد",
+        message: "Your information has been successfully updated",
         user: updatedUser,
       },
     });
@@ -149,11 +147,11 @@ class userAuthController extends Controller {
       }
     );
     if (!updateResult.modifiedCount === 0)
-      throw createError.BadRequest("اطلاعات ویرایش نشد");
+      throw createError.BadRequest("Information was not edited");
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: "اطلاعات با موفقیت آپدیت شد",
+        message: "Information updated successfully",
       },
     });
   }
@@ -198,7 +196,7 @@ class userAuthController extends Controller {
     // Validate if the product exists
     const product = await ProductModel.findById(productId);
     if (!product) {
-      throw createHttpError.NotFound("محصولی با این شناسه یافت نشد");
+      throw createHttpError.NotFound("No product found with this ID");
     }
 
     // Update the user's favorite product
@@ -217,9 +215,9 @@ class userAuthController extends Controller {
 
     let message;
     if (user.favoriteProduct.includes(productId)) {
-      message = "به لیست علاقه‌مندی‌ها اضافه شد";
+      message = "Added to favorites list";
     } else {
-      message = "از لیست علاقه‌مندی‌ها حذف شد";
+      message = "Removed from favorites list";
     }
 
     return res.status(HttpStatus.OK).json({

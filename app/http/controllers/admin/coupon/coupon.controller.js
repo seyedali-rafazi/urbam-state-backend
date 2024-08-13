@@ -44,12 +44,14 @@ class CouponController extends Controller {
     });
 
     if (!coupon?._id)
-      throw createHttpError.InternalServerError("کد تخفیف ثبت نشد");
+      throw createHttpError.InternalServerError(
+        "Coupon code was not registered"
+      );
 
     return res.status(HttpStatus.CREATED).json({
       statusCode: HttpStatus.CREATED,
       data: {
-        message: "کد تخفیف با موفقیت ایجاد شد",
+        message: "Coupon code was successfully created",
         coupon,
       },
     });
@@ -67,11 +69,11 @@ class CouponController extends Controller {
       }
     );
     if (updateResult.modifiedCount === 0)
-      throw createHttpError.InternalServerError("کد تخفیف آپدیت نشد");
+      throw createHttpError.InternalServerError("Coupon code was not updated");
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: "کد تخفیف با موفقیت آپدیت شد",
+        message: "Coupon code was successfully updated",
       },
     });
   }
@@ -80,11 +82,11 @@ class CouponController extends Controller {
     await this.findCouponById(id);
     const coupon = await CouponModel.findByIdAndDelete(id);
     if (!coupon._id)
-      throw createHttpError.InternalServerError("کد تخفیف حذف نشد");
+      throw createHttpError.InternalServerError("Coupon code was not deleted");
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
-        message: "کد تخفیف با موفقیت حذف شد",
+        message: "Coupon code was successfully deleted",
       },
     });
   }
@@ -97,7 +99,7 @@ class CouponController extends Controller {
       },
     ]);
     if (!coupons)
-      throw createHttpError.InternalServerError("کد تخفیف پیدا نشد");
+      throw createHttpError.InternalServerError("Coupon codes not found");
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
@@ -114,7 +116,8 @@ class CouponController extends Controller {
         select: { title: 1 },
       },
     ]);
-    if (!coupon) throw createHttpError.InternalServerError("کد تخفیف پیدا نشد");
+    if (!coupon)
+      throw createHttpError.InternalServerError("Coupon code not found");
     return res.status(HttpStatus.OK).json({
       statusCode: HttpStatus.OK,
       data: {
@@ -125,7 +128,9 @@ class CouponController extends Controller {
   async findCouponById(id) {
     const coupon = await CouponModel.findById(id);
     if (!coupon)
-      throw createHttpError.BadRequest("کد تخفیف با این مشخصات یافت نشد");
+      throw createHttpError.BadRequest(
+        "Coupon code with these specifications was not found"
+      );
     return copyObject(coupon);
   }
 }

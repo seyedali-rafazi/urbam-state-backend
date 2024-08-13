@@ -3,12 +3,11 @@ const createHttpError = require("http-errors");
 const JWT = require("jsonwebtoken");
 const { UserModel } = require("../../models/user");
 
-
 async function verifyAccessToken(req, res, next) {
   try {
     const accessToken = req.signedCookies["accessToken"];
     if (!accessToken) {
-      throw createHttpError.Unauthorized("لطفا وارد حساب کاربری خود شوید.");
+      throw createHttpError.Unauthorized("Please log into your account.");
     }
     const token = cookieParser.signedCookie(
       accessToken,
@@ -19,13 +18,14 @@ async function verifyAccessToken(req, res, next) {
       process.env.ACCESS_TOKEN_SECRET_KEY,
       async (err, payload) => {
         try {
-          if (err) throw createHttpError.Unauthorized("توکن نامعتبر است");
+          if (err) throw createHttpError.Unauthorized("Invalid token");
           const { _id } = payload;
           const user = await UserModel.findById(_id, {
             password: 0,
             otp: 0,
           });
-          if (!user) throw createHttpError.Unauthorized("حساب کاربری یافت نشد");
+          if (!user)
+            throw createHttpError.Unauthorized("User account not found");
           req.user = user;
           return next();
         } catch (error) {
@@ -37,7 +37,6 @@ async function verifyAccessToken(req, res, next) {
     next(error);
   }
 }
-
 
 function decideAuthMiddleware(req, res, next) {
   const accessToken = req.signedCookies["accessToken"];
