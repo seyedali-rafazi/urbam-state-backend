@@ -10,7 +10,7 @@ This is the backend application for a house rental platform, built using Node.js
 - **House Management**: CRUD operations for houses, models, makes, etc.
 - **Rental Management**: Creating reservations, tracking rental status, etc.
 - **Payment Integration**: Coming soon
-- **Admin Dashboard**: Managing users, cars, and rentals
+- **Admin Dashboard**: Managing users, houses, and rentals
 
 ## Technologies Used
 
